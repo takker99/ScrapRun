@@ -18,6 +18,7 @@ export function* diff<
     const oldCode = oldMap.get(filename);
     if (oldCode && content(oldCode.blocks) === content(blocks)) {
       yield { changed: false, filename };
+      continue;
     }
     yield { changed: true, filename };
   }
