@@ -230,7 +230,6 @@ Deno.test("readCodeBlocks()", () => {
     "created": 1672982674,
     "updated": 1672982674,
   }];
-  console.log(readCodeBlocks(lines2));
   assertEquals(
     readCodeBlocks(lines2),
     new Map<string, Blocks<BaseLine>>([
