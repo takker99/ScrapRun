@@ -2,30 +2,30 @@ import { toPlantUML } from "./toPlantumlURL.ts";
 import { assertEquals } from "../../deps/testing.ts";
 
 Deno.test("toPlantUML()", async (t) => {
-  await t.step("png", () => {
+  await t.step("png", async () => {
     const uml = `
     @startuml
     class Car
     @enduml
   `;
     assertEquals(
-      toPlantUML(uml, "png"),
-      "https://www.plantuml.com/plantuml/png/ur800eVYaiIYajBS72uGBpadiRXOmJcn2CnpICrBWSW00000",
+      await toPlantUML(uml, "png"),
+      "https://www.plantuml.com/plantuml/png/~1U9pYKb1GK70eBaaiAYdDpU42yP9p4ekB5PmJYy0yXzIy58WC0000__y30Fz02xO0",
     );
   });
-  await t.step("ascii", () => {
+  await t.step("ascii", async () => {
     const uml = `
     @startuml
     class Car
     @enduml
   `;
     assertEquals(
-      toPlantUML(uml),
-      "https://www.plantuml.com/plantuml/svg/ur800eVYaiIYajBS72uGBpadiRXOmJcn2CnpICrBWSW00000",
+      await toPlantUML(uml),
+      "https://www.plantuml.com/plantuml/svg/~1U9pYKb1GK70eBaaiAYdDpU42yP9p4ekB5PmJYy0yXzIy58WC0000__y30Fz02xO0",
     );
   });
 
-  await t.step("unicode", () => {
+  await t.step("unicode", async () => {
     const uml = `@startgantt
   hide footbox
   Project starts 2021-11-30
@@ -39,8 +39,8 @@ Deno.test("toPlantUML()", async (t) => {
   [大晦日] happens 2021-12-31
  @endgantt`;
     assertEquals(
-      toPlantUML(uml),
-      "https://www.plantuml.com/plantuml/svg/RP7D2e9058NtFSLzWG5dAcZf8xGF5vQMjL3HMRHDeI9h6H944FG3ORIeHJ-FCsO-HgER36SppBttVETSkB9BLOVsL9FI2e3HrtJeMXPjMqDUDXrhe7Sev1eNY4GmmXXL9JvhOPAif_5zbeIHygyWICAWcXheflRhuI9r5b5OG94Y5OWe8g2gc5C8GRgTny-0_pAJzpXA9rS53DMsTRDWGB8fyoxCFp7lmVmDVyinDS5ozOoCNqiUyhajc3SIk3VoxDqnMHsIS5yMPBlAt3Q_mHS0",
+      await toPlantUML(uml),
+      "https://www.plantuml.com/plantuml/svg/~1U9noA2v9B2f9JymhAU5IKCZ8J4bLIClFBqdAh-1IK0WeoizAJIvH0AifLZ0oC3BKDJJKDJRWKb28DZHwDgVZoOwkPzFNnAAgCD8rC5H8p4jHICrBGOWP8kjQYqsN8HPTHiYwkh7fCiAYozYGIq51LrVXnSAU9xkw5NHrGOOyRLlpedrph496Oa51QXwI0KOWsSTDwnyththSjFDnyxp7JJinhJ71uZXJaCudkwS-sTNzV4lluwP6BAPRWErUilpPp6NFfY_5L01ogqDgNWeu3W00003__mC095kAVm00",
     );
   });
 });

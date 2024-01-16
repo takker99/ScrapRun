@@ -1,12 +1,14 @@
-import { deflate, initSyncBundledOnce } from "../../deps/denoflate.ts";
-import { encode64, textToBuffer } from "./encode.ts";
+import { encode64 } from "./encode.ts";
 
-export const toPlantUML = (
+export const toPlantUML = async (
   uml: string,
   type: "svg" | "png" | "dsvg" | "dpng" = "svg",
-) => {
-  initSyncBundledOnce();
-  return `https://www.plantuml.com/plantuml/${type}/${
-    encode64(deflate(textToBuffer(uml), 9))
-  }`;
+): Promise<string> => {
+  const stream = new Blob([new TextEncoder().encode(uml)]).stream()
+    .pipeThrough(
+      new CompressionStream("deflate"),
+    );
+  const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
+
+  return `https://www.plantuml.com/plantuml/${type}/~1${encode64(compressed)}`;
 };
