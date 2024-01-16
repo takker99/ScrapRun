@@ -51,7 +51,7 @@ export const setup = (
   scrapbox.on("page:changed", handlePageChanged);
 
   const style = document.createElement("style");
-  style.textContent = `.scrap-run{display;block;width:95%}`;
+  style.textContent = `.scrap-run{display:block;width:95%}`;
   document.head.append(style);
 
   return () => {
