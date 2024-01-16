@@ -46,16 +46,24 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
       throw new Error(`"div.lines#L${id}" could not be found.`);
     }
     lineDOM.insertAdjacentElement("afterend", area);
-
-    const render = (...elements: Node[]) => {
-      area.textContent = "";
-      area.append(...elements);
+    const fixMargin = () => {
+      const indent = lineDOM.getElementsByClassName("indent")[0];
+      if (!(indent instanceof HTMLElement)) return;
+      area.style.marginLeft = indent.style.marginLeft;
     };
+    this._observer?.disconnect?.();
+    fixMargin();
+    this._observer = new MutationObserver(fixMargin);
+    this._observer.observe(lineDOM, { childList: true, subtree: true });
+
     this._dispose = this._compile({
       filename: this.filename,
       before,
       after,
-      render,
+      render: (...elements: Node[]) => {
+        area.textContent = "";
+        area.append(...elements);
+      },
     });
     return false;
   }
@@ -91,5 +99,6 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
   private _blocks: Blocks<Line> | undefined;
   private _dispose: (() => void) | undefined;
   private _area: HTMLDivElement | undefined;
+  private _observer: MutationObserver | undefined;
   private _style: HTMLStyleElement | undefined;
 }
