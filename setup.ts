@@ -1,4 +1,4 @@
-import { Compile } from "./compile.ts";
+import { Preview } from "./preview.ts";
 import { takeInternalLines } from "./deps/scrapbox-std-browser.ts";
 import { BaseLine, Scrapbox } from "./deps/scrapbox.ts";
 import { diff } from "./diff.ts";
@@ -6,14 +6,14 @@ import { readCodeBlocks } from "./readCodeBlocks.ts";
 import { Viewer } from "./viewer.ts";
 declare const scrapbox: Scrapbox;
 
-export interface Compiler {
+export interface Previewer {
   when: RegExp;
-  compile: Compile;
+  preview: Preview;
 }
 
 /** ScrapRunを起動する */
 export const setup = (
-  { compilers }: { compilers: Compiler[] },
+  { previewers }: { previewers: Previewer[] },
 ): () => void => {
   const viewers = new Map<string, Viewer<BaseLine>>();
   const update = () => {
@@ -25,8 +25,8 @@ export const setup = (
       if (!viewer) {
         if (!newBlocks) continue;
         // create
-        const compile = compilers.find(({ when }) => when.test(filename))
-          ?.compile;
+        const compile = previewers.find(({ when }) => when.test(filename))
+          ?.preview;
         if (!compile) continue;
         viewer = new Viewer(filename, compile);
         viewers.set(filename, viewer);

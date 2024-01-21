@@ -1,6 +1,6 @@
 import { BaseLine } from "./deps/scrapbox.ts";
 import { Blocks, CodeBlock, content } from "./codeBlock.ts";
-import { Compile } from "./compile.ts";
+import { Preview } from "./preview.ts";
 import { getLineDOM } from "./deps/scrapbox-std-browser.ts";
 import { debounce } from "./debounce.ts";
 import { Result } from "./debounce.ts";
@@ -15,13 +15,13 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
 
   constructor(
     private _filename: string,
-    private _compile: Compile,
+    private _preview: Preview,
   ) {
     this._update = debounce(async (after?: Blocks<Line>) => {
       await this._dispose?.();
       if (!after || content(after) === "") {
         // コードブロックが削除されたときの処理
-        await this._compile({ filename: this.filename, before: this.blocks });
+        await this._preview({ filename: this.filename, before: this.blocks });
         this._area?.remove?.();
         this._style?.remove?.();
         this._area = undefined;
@@ -56,7 +56,7 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
       this._observer.observe(lineDOM, { childList: true, subtree: true });
 
       // previewerの実行
-      this._dispose = await this._compile({
+      this._dispose = await this._preview({
         filename: this.filename,
         before,
         after,

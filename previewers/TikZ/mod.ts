@@ -1,5 +1,5 @@
 import { content } from "../../codeBlock.ts";
-import { Compile, CompileInit } from "../../compile.ts";
+import { Preview, PreviewInit } from "../../preview.ts";
 import { SVGResult } from "./types.ts";
 import { WorkerCommand, WorkerResult } from "./types.ts";
 import { toDataURL } from "../../deps/dvi2html.ts";
@@ -14,10 +14,10 @@ const loadingSVGURL = await toDataURL(
 export const previewTikZ = (
   workerURL: string | URL,
   zippedAssetURL: string | URL,
-): Compile => {
+): Preview => {
   let worker: Worker | undefined;
 
-  let job: ReturnType<Compile> = Promise.resolve(undefined);
+  let job: ReturnType<Preview> = Promise.resolve(undefined);
   return (compileInit) => {
     // ensure running only one job
     job = (async () => {
@@ -31,10 +31,10 @@ export const previewTikZ = (
 
 const preview = async (
   worker: Worker,
-  compileInit: CompileInit,
+  previewInit: PreviewInit,
 ) => {
-  if (!("after" in compileInit)) return undefined;
-  const tikz = content(compileInit.after);
+  if (!("after" in previewInit)) return undefined;
+  const tikz = content(previewInit.after);
   const promise = new Promise<SVGResult>(
     (resolve) => {
       const callback = (e: MessageEvent<WorkerResult>) => {
@@ -49,7 +49,7 @@ const preview = async (
   const img = document.createElement("img");
   const timer = setTimeout(() => {
     img.src = loadingSVGURL;
-    compileInit.render(img);
+    previewInit.render(img);
   }, 500);
 
   const { svg, log } = await promise;
@@ -63,14 +63,14 @@ const preview = async (
     pre.append(code);
     code.textContent = new TextDecoder().decode(log);
 
-    compileInit.render(pre);
+    previewInit.render(pre);
     // 最下部までスクロールして、エラー部分がすぐ見えるようにする
     pre.scroll(0, pre.scrollHeight);
     return;
   }
 
   img.src = await toDataURL(new Blob([svg], { type: "image/svg+xml" }));
-  compileInit.render(img);
+  previewInit.render(img);
 };
 const init = async (workerURL: string | URL, zippedAssetURL: string | URL) => {
   const worker = new Worker(workerURL, {
