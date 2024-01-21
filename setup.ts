@@ -21,19 +21,28 @@ export const setup = (
     for (const { changed, filename } of diff(viewers, codeBlocks)) {
       if (!changed) continue;
       const newBlocks = codeBlocks.get(filename);
-      const viewer = viewers.get(filename);
+      let viewer = viewers.get(filename);
       if (!viewer) {
         if (!newBlocks) continue;
         // create
         const compile = compilers.find(({ when }) => when.test(filename))
           ?.compile;
         if (!compile) continue;
-        viewers.set(filename, new Viewer(filename, newBlocks, compile));
-        continue;
+        viewer = new Viewer(filename, compile);
+        viewers.set(filename, viewer);
       }
-      // update or delete
-      const deleted = viewer.update(newBlocks);
-      if (deleted) viewers.delete(filename);
+      // create or update or delete
+      viewer.update(newBlocks).then((result) => {
+        switch (result.type) {
+          case "resolve":
+            if (result.value) viewers.delete(filename);
+            return;
+          case "reject":
+            throw result.value;
+          case "cancel":
+            return;
+        }
+      });
       continue;
     }
   };

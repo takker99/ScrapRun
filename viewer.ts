@@ -2,6 +2,8 @@ import { BaseLine } from "./deps/scrapbox.ts";
 import { Blocks, CodeBlock, content } from "./codeBlock.ts";
 import { Compile } from "./compile.ts";
 import { getLineDOM } from "./deps/scrapbox-std-browser.ts";
+import { debounce } from "./debounce.ts";
+import { Result } from "./debounce.ts";
 
 export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
   get filename(): string {
@@ -13,59 +15,62 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
 
   constructor(
     private _filename: string,
-    blocks: Blocks<Line>,
     private _compile: Compile,
   ) {
-    this.update(blocks);
+    this._update = debounce(async (after?: Blocks<Line>) => {
+      await this._dispose?.();
+      if (!after || content(after) === "") {
+        // コードブロックが削除されたときの処理
+        await this._compile({ filename: this.filename, before: this.blocks });
+        this._area?.remove?.();
+        this._style?.remove?.();
+        this._area = undefined;
+        this._style = undefined;
+        this._blocks = undefined;
+        return true;
+      }
+      const before = this.blocks;
+      this._blocks = after;
+
+      // 描画領域の構築
+      this.makeStyle();
+      const area = this.makeArea();
+
+      // 挿入位置の特定と挿入
+      const id = after.at(0)?.at?.(-1)?.id;
+      const lineDOM = getLineDOM(id);
+      if (!lineDOM) {
+        throw new Error(`"div.lines#L${id}" could not be found.`);
+      }
+      lineDOM.insertAdjacentElement("afterend", area);
+
+      // インデントを前の行に追随させる
+      const fixMargin = () => {
+        const indent = lineDOM.getElementsByClassName("indent")[0];
+        if (!(indent instanceof HTMLElement)) return;
+        area.style.marginLeft = indent.style.marginLeft;
+      };
+      this._observer?.disconnect?.();
+      fixMargin();
+      this._observer = new MutationObserver(fixMargin);
+      this._observer.observe(lineDOM, { childList: true, subtree: true });
+
+      // previewerの実行
+      this._dispose = await this._compile({
+        filename: this.filename,
+        before,
+        after,
+        render: (...elements: Node[]) => {
+          area.textContent = "";
+          area.append(...elements);
+        },
+      });
+      return false;
+    });
   }
 
-  /** コードブロックの更新を反映する
-   *
-   * @param after 更新後のコードブロック
-   * @returns 削除された場合はtrue
-   */
-  update(after?: Blocks<Line>): boolean {
-    this._dispose?.();
-    if (!after || content(after) === "") {
-      this._compile({ filename: this.filename, before: this.blocks });
-      this._area?.remove?.();
-      this._style?.remove?.();
-      this._area = undefined;
-      this._style = undefined;
-      this._blocks = undefined;
-      return true;
-    }
-    const before = this.blocks;
-    this._blocks = after;
-
-    this.makeStyle();
-    const area = this.makeArea();
-    const id = after.at(0)?.at?.(-1)?.id;
-    const lineDOM = getLineDOM(id);
-    if (!lineDOM) {
-      throw new Error(`"div.lines#L${id}" could not be found.`);
-    }
-    lineDOM.insertAdjacentElement("afterend", area);
-    const fixMargin = () => {
-      const indent = lineDOM.getElementsByClassName("indent")[0];
-      if (!(indent instanceof HTMLElement)) return;
-      area.style.marginLeft = indent.style.marginLeft;
-    };
-    this._observer?.disconnect?.();
-    fixMargin();
-    this._observer = new MutationObserver(fixMargin);
-    this._observer.observe(lineDOM, { childList: true, subtree: true });
-
-    this._dispose = this._compile({
-      filename: this.filename,
-      before,
-      after,
-      render: (...elements: Node[]) => {
-        area.textContent = "";
-        area.append(...elements);
-      },
-    });
-    return false;
+  update(after?: Blocks<Line>): Promise<Result<boolean>> {
+    return this._update(after);
   }
 
   /** previewの表示領域を作成する */
@@ -97,7 +102,13 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
   }
 
   private _blocks: Blocks<Line> | undefined;
-  private _dispose: (() => void) | undefined;
+  private _dispose: (() => Promise<void>) | undefined;
+  /** コードブロックの更新を反映する
+   *
+   * @param after 更新後のコードブロック
+   * @returns 削除された場合はtrue
+   */
+  private _update: (after?: Blocks<Line>) => Promise<Result<boolean>>;
   private _area: HTMLDivElement | undefined;
   private _observer: MutationObserver | undefined;
   private _style: HTMLStyleElement | undefined;

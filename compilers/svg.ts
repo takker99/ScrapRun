@@ -1,7 +1,8 @@
 import { content } from "../codeBlock.ts";
 import { Compile } from "../compile.ts";
+import { toDataURL } from "../deps/dvi2html.ts";
 
-export const previewSVG: Compile = (compileInit) => {
+export const previewSVG: Compile = async (compileInit) => {
   if (!("after" in compileInit)) return undefined;
   const svg = content(compileInit.after);
   const dom = new DOMParser().parseFromString(svg, "image/svg+xml");
@@ -16,7 +17,7 @@ export const previewSVG: Compile = (compileInit) => {
     return;
   }
 
-  const url = `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
+  const url = await toDataURL(new Blob([svg], { type: "image/svg+xml" }));
   const img = document.createElement("img");
   img.src = url;
   compileInit.render(img);

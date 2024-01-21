@@ -12,4 +12,6 @@ export type CompileInit =
     filename: string;
     before: Blocks<BaseLine>;
   };
-export type Compile = (compileInit: CompileInit) => (() => void) | undefined;
+export type Compile = (
+  compileInit: CompileInit,
+) => Promise<(() => Promise<void>) | undefined>;
