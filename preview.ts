@@ -1,7 +1,7 @@
 import { Blocks } from "./codeBlock.ts";
 import { BaseLine } from "./deps/scrapbox.ts";
 
-export type CompileInit =
+export type PreviewInit =
   /** 新規作成 or 更新された場合 */
   {
     filename: string;
@@ -12,6 +12,6 @@ export type CompileInit =
     filename: string;
     before: Blocks<BaseLine>;
   };
-export type Compile = (
-  compileInit: CompileInit,
+export type Preview = (
+  compileInit: PreviewInit,
 ) => Promise<(() => Promise<void>) | undefined>;
