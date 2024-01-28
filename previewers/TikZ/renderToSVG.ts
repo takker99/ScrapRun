@@ -23,7 +23,8 @@ export const renderToSVG = (
         worker!.addEventListener("message", callback);
       },
     );
-    worker.postMessage({ type: "compile", input: tikz } as WorkerCommand);
+    const command: WorkerCommand = { type: "compile", input: tikz };
+    worker.postMessage(command);
 
     return promise;
   })();
@@ -41,7 +42,8 @@ const init = async (workerURL: string | URL, zippedAssetURL: string | URL) => {
     };
     worker!.addEventListener("message", callback);
   });
-  worker.postMessage({ type: "asset-url", url: `${zippedAssetURL}` });
+  const command: WorkerCommand = { type: "asset-url", url: `${zippedAssetURL}` };
+  worker.postMessage(command);
   await initialized;
   return worker;
 };
