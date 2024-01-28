@@ -15,62 +15,68 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
 
   constructor(
     private _filename: string,
-    private _preview: Preview,
+    preview: Preview,
   ) {
-    this._update = debounce(async (after?: Blocks<Line>) => {
-      await this._dispose?.();
-      if (!after || content(after) === "") {
-        // コードブロックが削除されたときの処理
-        await this._preview({ filename: this.filename, before: this.blocks });
-        this._area?.remove?.();
-        this._style?.remove?.();
-        this._area = undefined;
-        this._style = undefined;
-        this._blocks = undefined;
-        return true;
-      }
-      const before = this.blocks;
-      this._blocks = after;
-
-      // 描画領域の構築
-      this.makeStyle();
-      const area = this.makeArea();
-
-      // 挿入位置の特定と挿入
-      const id = after.at(0)?.at?.(-1)?.id;
-      const lineDOM = getLineDOM(id);
-      if (!lineDOM) {
-        throw new Error(`"div.lines#L${id}" could not be found.`);
-      }
-      lineDOM.insertAdjacentElement("afterend", area);
-
-      // インデントを前の行に追随させる
-      const fixMargin = () => {
-        const indent = lineDOM.getElementsByClassName("indent")[0];
-        if (!(indent instanceof HTMLElement)) return;
-        area.style.marginLeft = indent.style.marginLeft;
-      };
-      this._observer?.disconnect?.();
-      fixMargin();
-      this._observer = new MutationObserver(fixMargin);
-      this._observer.observe(lineDOM, { childList: true, subtree: true });
-
+    this._preview = debounce(async (before, after, area) => {
       // previewerの実行
-      this._dispose = await this._preview({
-        filename: this.filename,
-        before,
-        after,
-        render: (...elements: Node[]) => {
-          area.textContent = "";
-          area.append(...elements);
-        },
-      });
+      this._dispose = await preview(
+        area
+          ? {
+            filename: this.filename,
+            before,
+            after,
+            render: (...elements: Node[]) => {
+              area.textContent = "";
+              area.append(...elements);
+            },
+          }
+          : { filename: this.filename, before },
+      );
       return false;
     });
   }
 
-  update(after?: Blocks<Line>): Promise<Result<boolean>> {
-    return this._update(after);
+  async update(after?: Blocks<Line>): Promise<Result<boolean>> {
+    await this._dispose?.();
+    if (!after || content(after) === "") {
+      // コードブロックが削除されたときの処理
+      const result = await this._preview(this.blocks);
+      if (result.type === "cancel") return result;
+      if (result.type === "reject") throw result.value;
+      this._area?.remove?.();
+      this._style?.remove?.();
+      this._area = undefined;
+      this._style = undefined;
+      this._blocks = undefined;
+      return { type: "resolve", value: true };
+    }
+    const before = this.blocks;
+    this._blocks = after;
+
+    // 描画領域の構築
+    this.makeStyle();
+    const area = this.makeArea();
+
+    // 挿入位置の特定と挿入
+    const id = after.at(0)?.at?.(-1)?.id;
+    const lineDOM = getLineDOM(id);
+    if (!lineDOM) {
+      throw new Error(`"div.lines#L${id}" could not be found.`);
+    }
+    lineDOM.insertAdjacentElement("afterend", area);
+
+    // インデントを前の行に追随させる
+    const fixMargin = () => {
+      const indent = lineDOM.getElementsByClassName("indent")[0];
+      if (!(indent instanceof HTMLElement)) return;
+      area.style.marginLeft = indent.style.marginLeft;
+    };
+    this._observer?.disconnect?.();
+    fixMargin();
+    this._observer = new MutationObserver(fixMargin);
+    this._observer.observe(lineDOM, { childList: true, subtree: true });
+
+    return this._preview(before, after, area);
   }
 
   /** previewの表示領域を作成する */
@@ -108,7 +114,11 @@ export class Viewer<Line extends BaseLine> implements CodeBlock<Line> {
    * @param after 更新後のコードブロック
    * @returns 削除された場合はtrue
    */
-  private _update: (after?: Blocks<Line>) => Promise<Result<boolean>>;
+  private _preview: (
+    before: Blocks<Line>,
+    after?: Blocks<Line>,
+    area?: HTMLDivElement,
+  ) => Promise<Result<boolean>>;
   private _area: HTMLDivElement | undefined;
   private _observer: MutationObserver | undefined;
   private _style: HTMLStyleElement | undefined;

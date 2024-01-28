@@ -32,9 +32,7 @@ export const renderToSVG = (
 };
 
 const init = async (workerURL: string | URL, zippedAssetURL: string | URL) => {
-  const worker = new Worker(workerURL, {
-    type: "module",
-  });
+  const worker = new Worker(workerURL, { type: "module" });
   const initialized = new Promise<void>((resolve) => {
     const callback = (e: MessageEvent<WorkerResult>) => {
       if (e.data.type !== "asset-url") return;
