@@ -36,6 +36,10 @@ globalThis.onmessage = async (e) => {
       {
         const { dvi, log } = await compile(data.input, {
           fileLoader: loadDecompress,
+          console: (message: string) => {
+            const result: WorkerResult = { type: "stdout", message };
+            globalThis.postMessage(result);
+          },
         });
         if (!dvi) {
           const result: WorkerResult = { type: data.type, log };
