@@ -1,7 +1,6 @@
 import { content } from "../../codeBlock.ts";
-import { Preview, PreviewInit } from "../../preview.ts";
-import { SVGResult } from "./types.ts";
-import { WorkerCommand, WorkerResult } from "./types.ts";
+import { Preview } from "../../preview.ts";
+import { renderToSVG } from "./renderToSVG.ts";
 import { toDataURL } from "../../deps/dvi2html.ts";
 
 // ported from https://github.com/artisticat1/tikzjax/blob/ba892f23a2d280d018681a4f88b39f5a8648c7c7/src/index.js#L39C66-L39C835
@@ -14,45 +13,17 @@ const loadingSVGURL = await toDataURL(
 export const previewTikZ = (
   workerURL: string | URL,
   zippedAssetURL: string | URL,
-): Preview => {
-  let worker: Worker | undefined;
-
-  let job: ReturnType<Preview> = Promise.resolve(undefined);
-  return (compileInit) => {
-    // ensure running only one job
-    job = (async () => {
-      await job;
-      worker ??= await init(workerURL, zippedAssetURL);
-      return preview(worker, compileInit);
-    })();
-    return job;
-  };
-};
-
-const preview = async (
-  worker: Worker,
-  previewInit: PreviewInit,
-) => {
+): Preview =>
+async (previewInit) => {
   if (!("after" in previewInit)) return undefined;
   const tikz = content(previewInit.after);
-  const promise = new Promise<SVGResult>(
-    (resolve) => {
-      const callback = (e: MessageEvent<WorkerResult>) => {
-        if (e.data.type !== "compile") return;
-        resolve(e.data);
-        worker!.removeEventListener("message", callback);
-      };
-      worker!.addEventListener("message", callback);
-    },
-  );
-  worker.postMessage({ type: "compile", input: tikz } as WorkerCommand);
+
   const img = document.createElement("img");
   const timer = setTimeout(() => {
     img.src = loadingSVGURL;
     previewInit.render(img);
   }, 500);
-
-  const { svg, log } = await promise;
+  const { svg, log } = await renderToSVG(tikz, workerURL, zippedAssetURL);
   clearTimeout(timer);
 
   if (!svg) {
@@ -71,20 +42,4 @@ const preview = async (
 
   img.src = await toDataURL(new Blob([svg], { type: "image/svg+xml" }));
   previewInit.render(img);
-};
-const init = async (workerURL: string | URL, zippedAssetURL: string | URL) => {
-  const worker = new Worker(workerURL, {
-    type: "module",
-  });
-  const initialized = new Promise<void>((resolve) => {
-    const callback = (e: MessageEvent<WorkerResult>) => {
-      if (e.data.type !== "asset-url") return;
-      resolve();
-      worker!.removeEventListener("message", callback);
-    };
-    worker!.addEventListener("message", callback);
-  });
-  worker.postMessage({ type: "asset-url", url: `${zippedAssetURL}` });
-  await initialized;
-  return worker;
 };
