@@ -1,4 +1,5 @@
-export type Blocks<Line extends { id: string; text: string }> = Line[][];
+export type Blocks<Line extends { id: string; text: string }> =
+  readonly Line[][];
 
 export interface CodeBlock<Line extends { id: string; text: string }> {
   filename: string;

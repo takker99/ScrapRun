@@ -8,7 +8,7 @@ import { Blocks } from "./codeBlock.ts";
 export const readCodeBlocks = <Line extends { id: string; text: string }>(
   lines: readonly Line[],
 ): Map<string, Blocks<Line>> => {
-  const codeBlocks = new Map<string, Blocks<Line>>();
+  const codeBlocks = new Map<string, Line[][]>();
   if (lines.length === 0) return codeBlocks;
   const packs = packRows(
     parseToRows(lines.map((line) => line.text).join("\n")),
