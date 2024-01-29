@@ -4,7 +4,7 @@ import { Spinner } from "../deps/cli.ts";
 
 const spinner = new Spinner();
 
-if (!await exists(new URL("../../dist", import.meta.url))) {
+if (!await exists(new URL("../dist", import.meta.url))) {
   spinner.message = "Downloading assets...";
   spinner.start();
   const [bakoma, amsfonts, tikzjaxRepo] = await Promise.all([
@@ -15,13 +15,13 @@ if (!await exists(new URL("../../dist", import.meta.url))) {
     fetch("http://mirrors.ctan.org/fonts/amsfonts.zip").then((res) =>
       res.arrayBuffer()
     ),
-    fetch("https://github.com/takker99/tikzjax/archive/refs/tags/0.1.0.zip")
+    fetch("https://github.com/takker99/tikzjax/archive/refs/tags/0.3.1.zip")
       .then((res) => res.arrayBuffer()),
   ]);
 
   spinner.message = "Extracting assets...";
 
-  await ensureDir(new URL("../../dist", import.meta.url));
+  await ensureDir(new URL("../dist", import.meta.url));
   await Promise.all([
     new JSZip().loadAsync(bakoma).then((zip) => zip.unzip("./dist")),
     new JSZip().loadAsync(amsfonts).then((zip) => zip.unzip("./dist")),
@@ -33,7 +33,7 @@ spinner.message = "Loading TFM files...";
 spinner.start();
 
 const files = new Map<string, Uint8Array>();
-for (const dir of ["../../dist/bakoma/tfm", "../../dist/amsfonts/tfm"]) {
+for (const dir of ["../dist/bakoma/tfm", "../dist/amsfonts/tfm"]) {
   for await (const fsFile of Deno.readDir(new URL(dir, import.meta.url))) {
     if (!fsFile.isFile) continue;
     if (!fsFile.name.endsWith(".tfm")) continue;
@@ -46,7 +46,7 @@ for (const dir of ["../../dist/bakoma/tfm", "../../dist/amsfonts/tfm"]) {
 
 spinner.message = "Loading ttf files...";
 
-for (const dir of ["../../dist/bakoma/ttf"]) {
+for (const dir of ["../dist/bakoma/ttf"]) {
   for await (const fsFile of Deno.readDir(new URL(dir, import.meta.url))) {
     if (!fsFile.isFile) continue;
     if (!fsFile.name.endsWith(".ttf")) continue;
@@ -59,7 +59,7 @@ for (const dir of ["../../dist/bakoma/ttf"]) {
 
 spinner.message = "Loading gzipped assets...";
 
-for (const dir of ["../../dist/tikzjax-0.1.0/assets"]) {
+for (const dir of ["../dist/tikzjax-0.3.1/assets"]) {
   for await (const fsFile of Deno.readDir(new URL(dir, import.meta.url))) {
     if (!fsFile.isFile) continue;
     if (!fsFile.name.endsWith(".gz")) continue;
@@ -85,7 +85,7 @@ const compressed = await zip.generateAsync({
   compressionOptions: { level: 9 },
 });
 await Deno.writeFile(
-  new URL("../../dist/assets.zip", import.meta.url),
+  new URL("../dist/assets.zip", import.meta.url),
   compressed,
 );
 
