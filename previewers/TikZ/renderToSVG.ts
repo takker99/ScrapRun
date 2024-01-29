@@ -8,6 +8,7 @@ export const renderToSVG = (
   tikz: string,
   workerURL: string | URL,
   zippedAssetURL: string | URL,
+  console: (message: string) => void,
 ) => {
   job = (async () => {
     await job;
@@ -16,6 +17,10 @@ export const renderToSVG = (
     const promise = new Promise<SVGResult>(
       (resolve) => {
         const callback = (e: MessageEvent<WorkerResult>) => {
+          if (e.data.type === "stdout") {
+            console(e.data.message);
+            return;
+          }
           if (e.data.type !== "compile") return;
           resolve(e.data);
           worker!.removeEventListener("message", callback);
@@ -23,7 +28,8 @@ export const renderToSVG = (
         worker!.addEventListener("message", callback);
       },
     );
-    worker.postMessage({ type: "compile", input: tikz } as WorkerCommand);
+    const command: WorkerCommand = { type: "compile", input: tikz };
+    worker.postMessage(command);
 
     return promise;
   })();
@@ -41,7 +47,11 @@ const init = async (workerURL: string | URL, zippedAssetURL: string | URL) => {
     };
     worker!.addEventListener("message", callback);
   });
-  worker.postMessage({ type: "asset-url", url: `${zippedAssetURL}` });
+  const command: WorkerCommand = {
+    type: "asset-url",
+    url: `${zippedAssetURL}`,
+  };
+  worker.postMessage(command);
   await initialized;
   return worker;
 };

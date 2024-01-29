@@ -26,19 +26,24 @@ globalThis.onmessage = async (e) => {
   const data: WorkerCommand = e.data;
   switch (data.type) {
     case "asset-url":
-      assetsURL = data.url;
-      globalThis.postMessage({ type: data.type } as WorkerResult);
+      {
+        assetsURL = data.url;
+        const result: WorkerResult = { type: data.type };
+        globalThis.postMessage(result);
+      }
       break;
     case "compile":
       {
         const { dvi, log } = await compile(data.input, {
           fileLoader: loadDecompress,
-          showLog: false,
+          console: (message: string) => {
+            const result: WorkerResult = { type: "stdout", message };
+            globalThis.postMessage(result);
+          },
         });
         if (!dvi) {
-          globalThis.postMessage({ type: data.type, log } as WorkerResult, [
-            log.buffer,
-          ]);
+          const result: WorkerResult = { type: data.type, log };
+          globalThis.postMessage(result, [log.buffer]);
           return;
         }
 
@@ -61,10 +66,8 @@ globalThis.onmessage = async (e) => {
           svg: true,
         });
 
-        globalThis.postMessage(
-          { type: data.type, svg: xml, log } as WorkerResult,
-          [log.buffer],
-        );
+        const result: WorkerResult = { type: data.type, svg: xml, log };
+        globalThis.postMessage(result, [log.buffer]);
       }
       break;
   }
