@@ -20,7 +20,7 @@ async (previewInit) => {
   const timer = setTimeout(() => {
     previewInit.render(logger.div);
     logger.log(compileLog);
-  }, 500);
+  }, 2000);
   const { svg } = await renderToSVG(
     content(previewInit.after),
     workerURL,
