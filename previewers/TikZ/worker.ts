@@ -2,7 +2,7 @@
 /// <reference lib="deno.worker" />
 
 import { compile } from "../../deps/tikzjax.ts";
-import { JSZip } from "../../deps/jszip.ts";
+import { decode } from "https://raw.githubusercontent.com/takker99/deno-zip/0.0.2/mod.ts";
 import { WorkerCommand, WorkerResult } from "./types.ts";
 import { findLatestCache, saveCache } from "./cache.ts";
 import {
@@ -73,17 +73,17 @@ globalThis.onmessage = async (e) => {
   }
 };
 
-let files: Map<string, Uint8Array> | undefined;
+let files: Map<string, () => Promise<ArrayBuffer>> | undefined;
 
 const loadDecompress = async (file: string) => {
   files ??= await loadAssets();
-  const data = files.get(file);
-  if (!data) {
+  const extract = files.get(file);
+  if (!extract) {
     const error = new Error(`File ${file} not found in assets`);
     console.log(error);
     throw error;
   }
-  return data;
+  return new Uint8Array(await extract());
 };
 
 let assetsURL = "";
@@ -93,11 +93,9 @@ const loadAssets = async () => {
   const res = cacheRes ?? await fetch(req);
   if (!cacheRes) await saveCache(req, res);
 
-  const zip = await new JSZip().loadAsync(await res.arrayBuffer());
-  const files = new Map<string, Uint8Array>();
-  for (const file of Object.values(zip.files)) {
-    if (file.dir) continue;
-    files.set(file.name, await file.async("uint8array"));
+  const files = new Map<string, () => Promise<ArrayBuffer>>();
+  for await (const { name, arrayBuffer } of decode(await res.arrayBuffer())) {
+    files.set(name, arrayBuffer);
   }
   return files;
 };

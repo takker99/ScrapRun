@@ -15,7 +15,7 @@ if (!await exists(new URL("../dist", import.meta.url))) {
     fetch("http://mirrors.ctan.org/fonts/amsfonts.zip").then((res) =>
       res.arrayBuffer()
     ),
-    fetch("https://github.com/takker99/tikzjax/archive/refs/tags/0.3.1.zip")
+    fetch("https://github.com/takker99/tikzjax/archive/refs/tags/0.4.0.zip")
       .then((res) => res.arrayBuffer()),
   ]);
 
@@ -59,7 +59,7 @@ for (const dir of ["../dist/bakoma/ttf"]) {
 
 spinner.message = "Loading gzipped assets...";
 
-for (const dir of ["../dist/tikzjax-0.3.1/assets"]) {
+for (const dir of ["../dist/tikzjax-0.4.0/assets"]) {
   for await (const fsFile of Deno.readDir(new URL(dir, import.meta.url))) {
     if (!fsFile.isFile) continue;
     if (!fsFile.name.endsWith(".gz")) continue;
@@ -67,7 +67,7 @@ for (const dir of ["../dist/tikzjax-0.3.1/assets"]) {
       (await Deno.open(new URL(`${dir}/${fsFile.name}`, import.meta.url)))
         .readable.pipeThrough(new DecompressionStream("gzip"));
     files.set(
-      fsFile.name,
+      fsFile.name.slice(0, -3),
       new Uint8Array(await new Response(decompressed).arrayBuffer()),
     );
   }
