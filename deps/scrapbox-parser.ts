@@ -1,1 +1,1 @@
-export * from "https://esm.sh/@progfay/scrapbox-parser@9.1.5";
+export * from "https://esm.sh/@progfay/scrapbox-parser@9.2.0";
